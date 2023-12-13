@@ -1,28 +1,22 @@
+#!/usr/bin/env node
 const axios = require("axios");
-const { keccak256 } = require("ethereum-cryptography/keccak");
-const { MerkleTree } = require("../utils/MerkleTree");
+const { faker } = require("@faker-js/faker"); // Assuming you have faker installed
 const niceList = require("../utils/niceList.json");
+const MerkleTree = require("../utils/MerkleTree");
+
 const serverUrl = "http://localhost:1225";
 
 async function main() {
-  // Convert names to Uint8Array using Buffer
-  const niceListUint8Array = niceList.map((name) => keccak256(name));
+  const nodeIdx =
+    process.argv[2] || Math.floor(Math.random() * niceList.length);
+  const merkleTree = new MerkleTree(niceList.map((node) => Buffer.from(node)));
+  const node = niceList[nodeIdx] || faker.internet.userName();
+  console.log({ node });
+  const proof = merkleTree.getProof(nodeIdx);
 
-  // Generate a Merkle Tree using the niceList
-  const merkleTree = new MerkleTree(niceListUint8Array);
-
-  // Select a name from the niceList
-  const selectedName = niceList[Math.floor(Math.random() * niceList.length)];
-
-  // Generate a proof for the selected name
-  const proof = merkleTree.getProof(
-    merkleTree.leaves.indexOf(keccak256(selectedName))
-  );
-
-  // Send the proof and name to the server
   const { data: gift } = await axios.post(`${serverUrl}/gift`, {
-    name: keccak256(selectedName),
-    proof
+    proof,
+    node
   });
 
   console.log({ gift });

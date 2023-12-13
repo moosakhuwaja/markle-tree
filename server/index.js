@@ -1,34 +1,22 @@
+// @ts-check
 const express = require("express");
-const bodyParser = require("body-parser");
-const { keccak256 } = require("ethereum-cryptography/keccak");
-const { MerkleTree } = require("../utils/MerkleTree");
 const verifyProof = require("../utils/verifyProof");
-const niceList = require("../utils/niceList.json");
 
 const port = 1225;
 
 const app = express();
-app.use(bodyParser.json());
+app.use(express.json());
 
-// TODO: hardcode a merkle root here representing the whole nice list
-// paste the hex string in here, without the 0x prefix
-const merkleTree = new MerkleTree(niceList);
-
-// get the root
-
-const MERKLE_ROOT = merkleTree.getRoot();
+// Paste the hex string here, without the 0x prefix
+const MERKLE_ROOT =
+  "ddd59a2ffccddd60ff47993312821cd57cf30f7f14fb82937ebe2c4dc78375aa";
 
 app.post("/gift", (req, res) => {
-  // grab the parameters from the front-end here
-  const { name, proof } = req.body;
+  // Grab the parameters from the front-end here
+  const { proof, node } = req.body;
 
-  // Convert the hardcoded merkle root to Uint8Array
-  const merkleRootUint8Array = Buffer.from(MERKLE_ROOT, "hex");
-
-  // Check if the proof is valid
-  const isValid = verifyProof(proof, keccak256(name), merkleRootUint8Array);
-
-  if (isValid) {
+  const isInTheList = verifyProof(proof, node, MERKLE_ROOT);
+  if (isInTheList) {
     res.send("You got a toy robot!");
   } else {
     res.send("You are not on the list :(");
